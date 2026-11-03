@@ -46,7 +46,7 @@ curl --get --data-urlencode 'q=你好' http://127.0.0.1:6917/api/lookup
 
 独立 Compose 项目 `mini-chaoshanhua`，宿主机仅监听 `127.0.0.1:6917`。不依赖猜人物或梦境服务，不占用其 6916 端口。若 6917 已占用，修改 Compose 宿主机端口及 Nginx 上游地址。
 
-将 `nginx.conf.example` 中两个 location 加入你的已有 HTTPS server 块，然后检查并重载：
+将 `nginx.conf.example` 中两个 location 加入你的已有 HTTPS server 块。保留现有证书和其他服务的 location；已有 `/chaoshan/` 时替换该段，不要重复添加。示例包含转发头、超时、8k 请求体限制及音频 Range 转发，`^~` 避免被站点通用音频文件正则 location 抢先处理。8k 只限制请求体，不限制音频下载大小。该配置假设 Nginx 在宿主机上运行。然后检查并重载：
 
 ```sh
 sudo nginx -t

@@ -1,8 +1,31 @@
-# 加入已有 HTTPS server 块，保留原有服务。末尾 / 用于去掉路径前缀。
-location = /chaoshan { return 301 /chaoshan/; }
-location /chaoshan/ {
+# 加入现有 HTTPS server 块，保留 /guess-who/ 等已有服务。
+# 这是 location 片段，不是整个 nginx.conf，不要覆盖证书或 server 配置。
+# 假定 Nginx 运行在宿主机；若 Nginx 也在容器内，须使用共同网络内的服务地址。
+
+location = /chaoshan {
+    return 308 /chaoshan/$is_args$args;
+}
+
+location ^~ /chaoshan/ {
+    # 尾部 / 必须保留：把 /chaoshan/api/... 转为后端的 /api/...
     proxy_pass http://127.0.0.1:6917/;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
     proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /chaoshan;
+
+    # 录音播放的范围请求交由后端处理；避免继承站点的代理缓存。
+    proxy_set_header Range $http_range;
+    proxy_set_header If-Range $http_if_range;
+    proxy_cache off;
+
     proxy_connect_timeout 5s;
-    proxy_read_timeout 30s;
+    proxy_send_timeout 45s;
+    proxy_read_timeout 45s;
+    # 当前只有 GET/HEAD 查询和下载，没有录音上传接口。
+    # 此限制针对请求体，不限制音频下载大小。
+    client_max_body_size 8k;
 }
