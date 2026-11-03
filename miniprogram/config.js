@@ -1,0 +1,1 @@
+module.exports = { apiBaseUrl: 'http://127.0.0.1:6917' }; // 真机及正式环境改成自己的 HTTPS 地址，可带 /chaoshan 前缀。

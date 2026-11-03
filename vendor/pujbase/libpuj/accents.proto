@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package pujpb;
+
+enum ToneSpecial {
+  TS_NONE = 0;
+  TS_SMOOTH_2ND_3RD_4TH = 1;
+  TS_SMOOTH_NEUTRAL = 2;
+  TS_VARIABLE_3RD_2ND = 3;
+}
+
+message FuzzyRuleAction {
+  // 目前总共两类：initial；initial+final
+  string action = 1;
+  // 正则表达式匹配串
+  string pattern = 2;
+  // 替换表达式，包含 $1 $2 $3 用于 Javascript.
+  string replacement_dollar = 3;
+  // 替换表达式，包含 \1 \2 \3 用于 Python.
+  string replacement_backslash = 4;
+}
+
+message FuzzyRuleDescriptor {
+  uint32 index = 1;
+  string id = 2;
+  repeated FuzzyRuleAction actions = 3;
+  string desc = 4;
+  repeated string examples = 5;
+  string title = 6;
+  string note = 7;
+  string ipa = 8;
+}
+
+message Tones {
+  repeated uint32 citation = 1;
+  repeated uint32 sandhi = 2;
+  repeated uint32 sandhi_em = 3;
+  repeated uint32 neutral = 4;
+  map<string, string> group = 5;
+  repeated ToneSpecial specials = 6;
+}
+
+message Accent {
+  string id = 1;
+  string area = 2;
+  optional string subarea = 3;
+  repeated uint32 rules = 4;
+  optional string variant = 5;
+  Tones tones = 6;
+  repeated string cat = 7;
+}
+
+message Accents {
+  repeated Accent accents = 1;
+  repeated FuzzyRuleDescriptor fuzzy_rule_descriptors = 2;
+}

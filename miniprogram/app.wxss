@@ -1,0 +1,1 @@
+page { background:#f3f7fc; color:#24344d; font-family:-apple-system,sans-serif; } button::after { border:0; } button { margin:0; }

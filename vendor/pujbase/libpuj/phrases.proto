@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package pujpb;
+
+message PhraseAccent {
+  string accent_id = 1;
+  repeated string puj = 2;
+}
+
+message PhraseExample {
+  repeated string teochew = 1;
+  repeated string puj = 2;
+  repeated string mandarin = 3;
+}
+
+enum PhraseLoanDonorLanguage {
+  PLDL_NONE = 0; // 无
+  PLDL_ENGLISH = 1; // 英语
+  PLDL_MANDARIN = 2; // 普通话
+  PLDL_CANTONESE = 3; // 粤语
+  PLDL_MALAY = 4; // 马来语
+  PLDL_INDONESIAN = 5; // 印尼语
+  PLDL_THAI = 6; // 泰语
+}
+
+message Phrase {
+  uint32 index = 1;
+  // 潮州话写法
+  repeated string teochew = 2;
+  // 潮州话读音
+  repeated string puj = 3;
+  // 普通话对译（需为严格对译词，不含有括号注释，用于普通话反查方言词）
+  repeated string cmn = 4;
+  // 词性
+  repeated string word_class = 5;
+  // 主要标签
+  repeated uint32 tag = 6;
+  // 中文释义/说明
+  optional string desc = 7;
+  // 变读口音
+  repeated PhraseAccent accents = 8;
+  // 借词语源
+  optional PhraseLoanDonorLanguage donor_lang = 9;
+  // 借词
+  optional string loan_word = 10;
+  // 例句
+  repeated PhraseExample examples = 11;
+  // 非正式写法
+  repeated string informal = 12;
+  // 含有括号注释的普通话，用于释义显示。
+  // 当列表中任意一个对译词含有括号时，该列表将存储（包括无括号的）所有对译词。
+  // 如果没有一个词有括号，表示直接用 cmn 即可
+  repeated string cmn_paren = 13;
+}
+
+message Phrases {
+  repeated Phrase phrases = 1;
+  repeated string phrase_tag_display = 2;
+}

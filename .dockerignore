@@ -1,0 +1,9 @@
+.git
+node_modules
+vendor
+miniprogram
+test
+scripts
+.env
+audio/*.mp3
+audio/*.wav

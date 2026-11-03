@@ -1,0 +1,12 @@
+{
+  "appid": "wx22ac9a1fd50b56ca",
+  "projectname": "mini-chaoshanhua",
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": true
+  }
+}
