@@ -3,6 +3,8 @@ services:
   dictionary:
     build: .
     restart: unless-stopped
+    environment:
+      AUDIO_PROVIDER: ${AUDIO_PROVIDER:-chaofayin}
     ports:
       - "127.0.0.1:6917:6917"
     volumes:

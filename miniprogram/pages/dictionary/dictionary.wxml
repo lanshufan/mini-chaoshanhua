@@ -1,33 +1,30 @@
 <view class="hero {{result ? 'compact' : ''}}">
-  <view wx:if="!result" class="intro"><view class="eyebrow">一句乡音 · 一份亲切</view><view class="title">潮汕话词典</view><view class="subtitle">查一个字，听一声家乡话</view></view>
+  <view wx:if="{{!result}}" class="title">潮汕话词典</view>
   <view class="search-box">
-    <textarea wx:if="!result" value="{{input}}" bindinput="onInput" maxlength="-1" placeholder="输入汉字、词语或成语" placeholder-class="placeholder" />
+    <textarea wx:if="{{!result}}" value="{{input}}" bindinput="onInput" maxlength="-1" placeholder="输入汉字、词语或成语" placeholder-class="placeholder" />
     <input wx:else value="{{input}}" bindinput="onInput" bindconfirm="search" confirm-type="search" maxlength="-1" placeholder="输入要查询的文字" />
-    <button wx:if="input" class="clear" bindtap="clear" aria-label="清空输入">×</button>
-    <view wx:if="!result" class="counter">还可以输入 {{10 - count}} 个字</view>
+    <button size="mini" wx:if="{{input}}" class="clear" bindtap="clear" aria-label="清空输入">×</button>
+    <view wx:if="{{!result}}" class="counter">还可以输入 {{10 - count}} 个字</view>
   </view>
-  <button class="search-button" bindtap="search" loading="{{loading}}" disabled="{{loading}}">搜索<text wx:if="!result"> →</text></button>
-  <view wx:if="!result" class="hero-note">汕头 · 澄海 · 潮阳 · 潮州 · 揭阳</view>
+  <button class="search-button" bindtap="search" loading="{{loading}}" disabled="{{loading}}">搜索</button>
 </view>
-<view class="content"><view wx:if="error" class="error">{{error}}<button bindtap="search" class="text-button">重试</button></view>
-  <block wx:if="!result">
+<view class="content"><view wx:if="{{error}}" class="error">{{error}}<button size="mini" bindtap="search" class="text-button">重试</button></view>
+  <block wx:if="{{!result}}">
     <view class="section-head">试着查一查<text>日常用字与问候</text></view>
-    <view class="chips"><button wx:for="{{suggestions}}" wx:key="*this" class="chip" data-word="{{item}}" bindtap="useWord">{{item}}</button></view>
-    <view wx:if="history.length" class="history"><view class="section-head">最近查询<button class="text-button" bindtap="clearHistory">清空</button></view><view class="chips"><button wx:for="{{history}}" wx:key="*this" class="chip muted" data-word="{{item}}" bindtap="useWord">{{item}}</button></view></view>
-    <view class="tip"><view class="tip-title">从一个字，认识潮汕话</view><view>支持最多 10 个汉字，词语和成语可完整查询，也可逐字查看。</view></view>
+    <view class="chips"><button size="mini" wx:for="{{suggestions}}" wx:key="*this" class="chip" data-word="{{item}}" bindtap="useWord">{{item}}</button></view>
+    <view wx:if="{{history.length}}" class="history"><view class="section-head">最近查询<button size="mini" class="text-button" bindtap="clearHistory">清空</button></view><view class="chips"><button size="mini" wx:for="{{history}}" wx:key="*this" class="chip muted" data-word="{{item}}" bindtap="useWord">{{item}}</button></view></view>
   </block>
   <block wx:else>
     <view class="section-head">查询结果<text>共 {{result.chars.length}} 字</text></view>
     <view class="card">
       <view class="word-heading">{{result.query}}</view><view class="hint">点击下方汉字，查看单字详情</view>
-      <view class="character-list"><button wx:for="{{result.chars}}" wx:key="index" class="character {{selected === item.index ? 'selected' : ''}}" data-index="{{item.index}}" bindtap="selectChar"><view>{{item.char}}</view></button></view>
-      <button wx:if="result.chars.length > 1" class="whole {{selected === -1 ? 'whole-active' : ''}}" bindtap="selectAll">完整词语</button>
-      <view class="detail-heading">{{active.text}}<text wx:if="active.pinyin">普通话 {{active.pinyin}}</text></view>
-      <view class="label">{{active.kind === "reference" ? "逐字读音参考" : "潮汕读音"}}</view><view class="reading-note">{{active.note}}</view>
-      <view wx:for="{{active.readings}}" wx:key="id" class="reading"><view>{{item.name}}</view><view class="reading-right"><text class="phonetic {{item.phonetic ? '' : 'pending'}}">{{item.phonetic || '该字音未收录'}}</text><button class="audio" disabled="{{!item.audio}}" bindtap="play" data-id="{{item.id}}" aria-label="播放{{item.name}}">{{item.audio ? (playing === item.id ? '停止' : '播放') : '暂无录音'}}</button></view><view class="variants" wx:if="item.options.length"><view wx:for="{{item.options}}" wx:for-item="option" wx:key="index">{{option.phonetic}} · {{option.category}}<text wx:if="option.meaning"> · {{option.meaning}}</text></view></view></view>
+      <view class="character-list"><button size="mini" wx:for="{{result.chars}}" wx:key="index" class="character {{selected === item.index ? 'selected' : ''}}" data-index="{{item.index}}" bindtap="selectChar"><view>{{item.char}}</view></button></view>
+      <button size="mini" wx:if="{{result.chars.length > 1}}" class="whole {{selected === -1 ? 'whole-active' : ''}}" bindtap="selectAll">完整词语</button>
+      <view class="detail-heading">{{active.text}}<text wx:if="{{active.pinyin}}">普通话 {{active.pinyin}}</text></view>
+      <view class="label">{{active.kind === 'reference' ? '逐字读音参考' : '潮汕读音'}}</view><view class="reading-note">{{active.note}}</view><view wx:if="{{active.onlineAudioNotice}}" class="reading-note">{{active.onlineAudioNotice}}</view>
+      <view wx:for="{{active.readings}}" wx:key="id" class="reading"><view>{{item.name}}</view><view class="reading-right"><text class="phonetic {{item.phonetic ? '' : 'pending'}}">{{item.phonetic || '该字音未收录'}}</text><button size="mini" class="audio" disabled="{{!item.audio}}" bindtap="play" data-id="{{item.id}}" aria-label="播放{{item.name}}">{{item.audio ? (playing === item.id ? '停止' : (item.audioMode === 'online' ? '在线参考' : '播放')) : '暂无录音'}}</button></view><view class="variants" wx:if="{{item.options.length}}"><view wx:for="{{item.options}}" wx:for-item="option" wx:key="index">{{option.phonetic}} · {{option.category}}<text wx:if="{{option.meaning}}"> · {{option.meaning}}</text></view></view></view>
       <view class="label">{{selected === -1 ? (result.chars.length > 1 ? '词义' : '字义') : '字义'}}</view><view class="meaning">{{active.meaning}}</view>
     </view>
-    <view class="footnote">资料：PUJDICT / pujbase · CC BY-SA 4.0。读音为拼音标注；音频仅在已收录时提供。</view>
+    <view class="footnote">资料：PUJDICT / pujbase · CC BY-SA 4.0。在线发音：chaofayin.com（汕头、潮州、揭阳）。澄海、潮阳需独立音源。</view>
   </block>
-  <view class="data-note">开源字音库 · 五种地方口音<view>汕头市区 / 澄海澄城 / 潮阳棉城 / 潮州府城 / 揭阳榕城</view><text user-select="true">源码：github.com/lanshufan/mini-chaoshanhua</text></view>
 </view>
