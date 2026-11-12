@@ -15,4 +15,15 @@
 .search-box textarea { width:100%; box-sizing:border-box; padding-right:44rpx; }
 .character-list .character { width:108rpx; height:108rpx; margin:0; padding:0; flex:0 0 108rpx; }
 .card .whole { width:auto; margin:24rpx 0 0; padding:0 20rpx; }
-.reading .audio { width:auto; min-width:0; margin:0; padding:0 16rpx; }
+/* 喇叭继承按钮颜色，灰色禁用态和播放态使用同一图形。 */
+.reading .audio { display:flex; align-items:center; justify-content:center; width:88rpx; min-width:88rpx; height:88rpx; margin:0; padding:0; line-height:1; border:0; border-radius:50%; background:transparent; color:#287cf3; }
+.reading .audio::after { border:0; }
+.reading .audio.audio-unavailable { background:transparent; color:#bbc3cf; }
+.reading .audio.audio-playing { background:#eaf3ff; color:#155dcc; }
+.reading .audio.audio-pressed { background:#eaf3ff; }
+.speaker-icon { position:relative; width:52rpx; height:52rpx; }
+.speaker-box { position:absolute; left:4rpx; top:20rpx; width:10rpx; height:14rpx; border-radius:2rpx; background:currentColor; }
+.speaker-cone { position:absolute; left:9rpx; top:12rpx; width:0; height:0; border-top:15rpx solid transparent; border-bottom:15rpx solid transparent; border-right:18rpx solid currentColor; }
+.speaker-wave { position:absolute; box-sizing:border-box; border:4rpx solid transparent; border-right-color:currentColor; border-radius:50%; }
+.speaker-wave-inner { left:21rpx; top:14rpx; width:18rpx; height:26rpx; }
+.speaker-wave-outer { left:22rpx; top:5rpx; width:29rpx; height:44rpx; }
