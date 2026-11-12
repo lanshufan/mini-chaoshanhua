@@ -5,7 +5,15 @@ Page({
     try { const history=wx.getStorageSync('teochew-history'); if(Array.isArray(history)) this.setData({history:history.filter(x=>typeof x==='string').slice(0,8)}); } catch (_) {}
     this.audio=wx.createInnerAudioContext();
     this.audio.onEnded(()=>this.setData({playing:''}));
-    this.audio.onError(()=>{ this.setData({playing:''}); wx.showToast({title:'音频暂时无法播放',icon:'none'}); });
+    this.audio.onError(error=>{
+      this.setData({playing:''});
+      const code=error.errCode == null ? '未知' : error.errCode;
+      const hints={10001:'播放器系统错误，请退出小程序后重试。',10002:'音频网络请求失败，请检查音频域名配置、网络及服务器响应。',10003:'音频文件无法读取，请检查服务器返回内容。',10004:'音频格式不受支持，请确认后端已更新。'};
+      const details='错误码：'+code+'\n'+(error.errMsg || '未提供详细信息')+'\n音频地址：'+(this.audio.src || '未设置');
+      wx.showModal({title:'语音播放失败',content:(hints[code] || '播放失败，请复制详情协助排查。')+'\n\n'+details,confirmText:'复制详情',cancelText:'关闭',success(result) {
+        if(result.confirm) wx.setClipboardData({data:details});
+      }});
+    });
   },
   onInput(e) { const input=Array.from(e.detail.value).slice(0,10).join(''); this.setData({input,count:Array.from(input).length}); },
   clear() { this.requestVersion=(this.requestVersion || 0)+1; this.setData({loading:false,error:''}); this.stopAudio(); this.setData({input:'',count:0,result:null,active:null,selected:-1}); },
