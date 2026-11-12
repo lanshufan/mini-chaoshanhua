@@ -1,4 +1,5 @@
 import {validate} from './dictionary.js';
+import {normalizeMp3} from './normalize-audio.js';
 
 const QUERY_URL = 'https://v.laojuhui.com/FD/Chaofanyi.ashx';
 const PLAY_URL = 'https://v.laojuhui.com/FD/PlayChaoYinVoice.ashx';
@@ -22,7 +23,7 @@ async function readLimited(response,limit) {
   return Buffer.concat(chunks,size);
 }
 
-export function createRemoteAudio({provider=process.env.AUDIO_PROVIDER || 'chaofayin',fetchImpl=globalThis.fetch,timeoutMs=7000,cooldownMs=10000,now=Date.now}={}) {
+export function createRemoteAudio({provider=process.env.AUDIO_PROVIDER || 'chaofayin',fetchImpl=globalThis.fetch,timeoutMs=7000,cooldownMs=10000,now=Date.now,normalizeAudio=normalizeMp3}={}) {
   if(!['none','chaofayin'].includes(provider)) throw new Error('AUDIO_PROVIDER must be chaofayin or none');
   const enabled=provider==='chaofayin',cache=new Map();
   let activeQueries=0,activeAudio=0,nextQueryAt=0;
@@ -63,7 +64,7 @@ export function createRemoteAudio({provider=process.env.AUDIO_PROVIDER || 'chaof
       let online=false;
       for(const reading of entry.readings) {
         if(reading.audio || !REGIONS[reading.id] || !reading.phonetic) continue;
-        reading.audio='/api/audio?region='+reading.id+'&q='+encodeURIComponent(entry.text);
+        reading.audio='/api/audio?region='+reading.id+'&q='+encodeURIComponent(entry.text)+'&v=2';
         reading.audioMode='online';reading.audioSource=info.source;reading.audioLicense='';online=true;
       }
       if(online) {entry.note+=' 在线发音采用服务默认读法，需结合词义核对文白读。';entry.onlineAudioNotice='在线音源的地区标签尚未逐条核实，部分地区可能返回同一音频。不同文字的发音请求请间隔10秒。';}
@@ -86,7 +87,7 @@ export function createRemoteAudio({provider=process.env.AUDIO_PROVIDER || 'chaof
       if(!/^audio\/(mpeg|mp3)(?:;|$)/i.test(type)) {await response.body?.cancel();throw failure(502,'发音服务未返回有效音频');}
       const bytes=await readLimited(response,4*1024*1024);
       if(bytes.length<4 || !(bytes.subarray(0,3).toString()==='ID3' || (bytes[0]===0xff && (bytes[1]&0xe0)===0xe0))) throw failure(502,'发音服务返回的音频无效');
-      return bytes;
+      return await normalizeAudio(bytes);
     } catch(error) {
       if(error.status) throw error;
       throw failure(error.name==='TimeoutError'||error.name==='AbortError'?504:502,'在线发音连接失败，请稍后重试');

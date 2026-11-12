@@ -11,7 +11,7 @@ const mp3=Buffer.concat([Buffer.from([0xff,0xfb,0x50,0xc4]),Buffer.alloc(296,1)]
 const item={FromWords:'你好',FaYinVoice1:'ab%2Bc%2F%3D%3D',FaYinVoice2:'ST%2B%2F%3D',FaYinVoice3:'JY%3D%3D'};
 function fixture(options={}) {
   const calls=[];
-  const service=createRemoteAudio({cooldownMs:0,fetchImpl:async(url,init)=>{
+  const service=createRemoteAudio({cooldownMs:0,normalizeAudio:async bytes=>bytes,fetchImpl:async(url,init)=>{
     calls.push({url:String(url),init});
     return String(url).includes('Chaofanyi.ashx')?new Response(JSON.stringify({result:true,item})):new Response(mp3,{headers:{'Content-Type':'audio/mpeg'}});
   },...options});
@@ -105,7 +105,7 @@ test('mini-program prefixes online audio with its deployed API base',async()=>{
   vm.runInNewContext(readFileSync(new URL('../miniprogram/data/dictionary.js',import.meta.url),'utf8'),context);
   const output=await context.module.exports.lookup('你好');
   const track=output.entry.readings.find(r=>r.id==='shantou');
-  assert.equal(track.audio,'https://example.com/chaoshan/api/audio?region=shantou&q='+encodeURIComponent('你好'));
+  assert.equal(track.audio,'https://example.com/chaoshan/api/audio?region=shantou&q='+encodeURIComponent('你好')+'&v=2');
   assert.ok(output.entry.onlineAudioNotice.includes('同一音频'));
 });
 

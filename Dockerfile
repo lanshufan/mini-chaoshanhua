@@ -1,4 +1,5 @@
 FROM node:22-alpine
+RUN apk add --no-cache ffmpeg
 WORKDIR /app
 COPY --chown=node:node package.json ./
 COPY --chown=node:node server ./server
