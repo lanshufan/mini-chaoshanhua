@@ -9,9 +9,7 @@ Page({
     const code=error.errCode == null ? '未知' : error.errCode;
     const details='阶段：'+stage+'\n错误码：'+code+'\n'+(error.errMsg || error.message || '未提供详细信息')+'\n音频地址：'+source;
     console.error('[audio]',details);
-    wx.showModal({title:'语音播放失败',content:details,confirmText:'复制详情',cancelText:'关闭',success(result) {
-      if(result.confirm) wx.setClipboardData({data:details});
-    }});
+    wx.showToast({title:'播放失败',icon:'none'});
   },
   startAudio(source,id) {
     const version=this.audioVersion=(this.audioVersion || 0)+1;
@@ -19,8 +17,10 @@ Page({
     const fail=(stage,error)=>{if(current()) this.audioFailure(stage,error,source);};
     this.setData({playing:id,audioStatus:'正在加载…',audioLoading:true});
     this.audioTimer=setTimeout(()=>fail('启动播放超时',{errMsg:'30秒内播放器没有开始播放，请复制详情协助排查。'}),30000);
+    let started=false;
     const begin=()=>{
-      if(!current()) return;
+      if(!current() || started) return;
+      started=true;
       try {
         const audio=wx.createInnerAudioContext();this.audio=audio;
         audio.onPlay(()=>{
@@ -36,10 +36,10 @@ Page({
       } catch(error) {fail('创建播放器',error);}
     };
     try {
-      // User explicitly tapped play: allow iPhone playback while its mute switch is on.
-      if(wx.setInnerAudioOption) wx.setInnerAudioOption({obeyMuteSwitch:false,speakerOn:true,success:begin,fail:error=>fail('设置播放选项',error)});
+      // Best-effort iPhone mute-switch setting. Unsupported runtimes must still play.
+      if(wx.setInnerAudioOption) wx.setInnerAudioOption({obeyMuteSwitch:false,speakerOn:true,success:begin,fail:begin});
       else begin();
-    } catch(error) {fail('设置播放选项',error);}
+    } catch(error) {begin();}
   },
   onInput(e) { const input=Array.from(e.detail.value).slice(0,10).join(''); this.setData({input,count:Array.from(input).length}); },
   clear() { this.requestVersion=(this.requestVersion || 0)+1; this.setData({loading:false,error:''}); this.stopAudio(); this.setData({input:'',count:0,result:null,active:null,selected:-1}); },
