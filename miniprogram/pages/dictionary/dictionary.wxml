@@ -13,6 +13,7 @@
     <view class="section-head">试着查一查<text>日常用字与问候</text></view>
     <view class="chips"><button size="mini" wx:for="{{suggestions}}" wx:key="*this" class="chip" data-word="{{item}}" bindtap="useWord">{{item}}</button></view>
     <view wx:if="{{history.length}}" class="history"><view class="section-head">最近查询<button size="mini" class="text-button" bindtap="clearHistory">清空</button></view><view class="chips"><button size="mini" wx:for="{{history}}" wx:key="*this" class="chip muted" data-word="{{item}}" bindtap="useWord">{{item}}</button></view></view>
+    <button size="mini" class="text-button about-button" bindtap="showAbout">关于</button>
   </block>
   <block wx:else>
     <view class="section-head">查询结果<text>共 {{result.chars.length}} 字</text></view>
@@ -25,6 +26,5 @@
       <view wx:for="{{active.readings}}" wx:key="id" class="reading"><view>{{item.name}}</view><view class="reading-right"><text class="phonetic {{item.phonetic ? '' : 'pending'}}">{{item.phonetic || '该字音未收录'}}</text><button size="mini" class="audio {{!item.audio ? 'audio-unavailable' : ''}} {{playing === item.id ? 'audio-playing' : ''}}" disabled="{{!item.audio}}" hover-class="{{item.audio ? 'audio-pressed' : 'none'}}" bindtap="play" data-id="{{item.id}}" aria-label="{{!item.audio ? item.name + '暂无语音' : (playing === item.id ? '停止' : '播放') + item.name}}"><view class="speaker-icon"><view class="speaker-box"></view><view class="speaker-cone"></view><view class="speaker-wave speaker-wave-inner"></view><view class="speaker-wave speaker-wave-outer"></view></view></button></view><view class="variants" wx:if="{{item.options.length}}"><view wx:for="{{item.options}}" wx:for-item="option" wx:key="index">{{option.phonetic}} · {{option.category}}<text wx:if="{{option.meaning}}"> · {{option.meaning}}</text></view></view></view>
       <view class="label">{{selected === -1 ? (result.chars.length > 1 ? '词义' : '字义') : '字义'}}</view><view class="meaning">{{active.meaning}}</view>
     </view>
-    <view class="footnote">资料：PUJDICT / pujbase · CC BY-SA 4.0。在线发音：chaofayin.com（汕头、潮州、揭阳）。澄海、潮阳需独立音源。</view>
   </block>
 </view>

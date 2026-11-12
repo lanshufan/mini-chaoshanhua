@@ -31,6 +31,18 @@ Page({
     if(this.data.playing===reading.id) { this.stopAudio(); return; }
     this.stopAudio(); this.audio.src=reading.audio; this.setData({playing:reading.id}); this.audio.play();
   },
+  showAbout() {
+    const sources=[
+      '字音资料：PUJDICT 项目贡献者 / pujbase。已转换五地读音并整理简繁字及词条索引。',
+      '原始资料：https://github.com/pujdict/pujbase',
+      '数据许可：CC BY-SA 4.0\nhttps://creativecommons.org/licenses/by-sa/4.0/',
+      '在线参考发音：https://chaofayin.com/',
+      '本项目源码（AGPL-3.0-or-later）：\nhttps://github.com/lanshufan/mini-chaoshanhua'
+    ].join('\n\n');
+    wx.showModal({title:'关于与资料来源',content:sources,confirmText:'复制来源',cancelText:'关闭',success(result) {
+      if(result.confirm) wx.setClipboardData({data:sources});
+    }});
+  },
   clearHistory() { this.setData({history:[]}); try { wx.removeStorageSync('teochew-history'); } catch (_) {} },
   onHide() { this.stopAudio(); },
   onUnload() { this.requestVersion=(this.requestVersion || 0)+1; if(this.audio) this.audio.destroy(); }
