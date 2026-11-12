@@ -1,6 +1,6 @@
 const { lookup } = require('../../data/dictionary');
 Page({
-  data:{ input:'',count:0,result:null,active:null,selected:-1,playing:'',audioStatus:'',loading:false,error:'',history:[],suggestions:['你好','食','茶','谢谢','新年快乐'] },
+  data:{ input:'',count:0,result:null,active:null,selected:-1,playing:'',audioStatus:'',audioLoading:false,loading:false,error:'',history:[],suggestions:['你好','食','茶','谢谢','新年快乐'] },
   onLoad() {
     try { const history=wx.getStorageSync('teochew-history'); if(Array.isArray(history)) this.setData({history:history.filter(x=>typeof x==='string').slice(0,8)}); } catch (_) {}
   },
@@ -17,7 +17,7 @@ Page({
     const version=this.audioVersion=(this.audioVersion || 0)+1;
     const current=()=>this.audioVersion===version;
     const fail=(stage,error)=>{if(current()) this.audioFailure(stage,error,source);};
-    this.setData({playing:id,audioStatus:'正在准备播放…'});
+    this.setData({playing:id,audioStatus:'正在加载…',audioLoading:true});
     this.audioTimer=setTimeout(()=>fail('启动播放超时',{errMsg:'30秒内播放器没有开始播放，请复制详情协助排查。'}),30000);
     const begin=()=>{
       if(!current()) return;
@@ -26,7 +26,7 @@ Page({
         audio.onPlay(()=>{
           if(!current()) return;
           clearTimeout(this.audioTimer);this.audioTimer=null;
-          this.setData({audioStatus:'正在播放'});
+          this.setData({audioStatus:'正在播放',audioLoading:false});
         });
         audio.onEnded(()=>{if(current()) this.stopAudio();});
         audio.onError(error=>fail('在线播放',error));
@@ -65,11 +65,11 @@ Page({
     const audio=this.audio;this.audio=null;
     if(audio) audio.destroy();
   },
-  stopAudio() { this.releaseAudio();this.setData({playing:'',audioStatus:''}); },
+  stopAudio() { this.releaseAudio();this.setData({playing:'',audioStatus:'',audioLoading:false}); },
   play(e) {
     const reading=this.data.active && this.data.active.readings.find(item=>item.id===e.currentTarget.dataset.id);
     if(!reading || !reading.audio) return;
-    if(this.data.playing===reading.id) { this.stopAudio(); return; }
+    if(this.data.playing===reading.id) { if(!this.data.audioLoading) this.stopAudio(); return; }
     this.stopAudio(); this.startAudio(reading.audio,reading.id);
   },
   showAbout() {

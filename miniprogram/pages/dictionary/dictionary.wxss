@@ -28,3 +28,6 @@
 .speaker-wave-inner { left:21rpx; top:14rpx; width:18rpx; height:26rpx; }
 .speaker-wave-outer { left:22rpx; top:5rpx; width:29rpx; height:44rpx; }
 .content .about-button { display:block; margin:40rpx auto 0; padding:12rpx 24rpx; color:#9aa8bc; font-size:23rpx; }
+
+.reading .audio.audio-playing { width:auto; min-width:176rpx; padding:0 16rpx; border-radius:16rpx; }
+.audio-status { white-space:nowrap; font-size:24rpx; line-height:1.4; }
