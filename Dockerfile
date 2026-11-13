@@ -1,5 +1,8 @@
 FROM node:22-alpine
-RUN apk add --no-cache ffmpeg
+RUN set -eux; \
+    sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories; \
+    cat /etc/apk/repositories; \
+    apk -v --no-cache add ffmpeg
 WORKDIR /app
 COPY --chown=node:node package.json ./
 COPY --chown=node:node server ./server
