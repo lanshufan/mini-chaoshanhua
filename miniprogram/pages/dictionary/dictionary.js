@@ -72,6 +72,9 @@ Page({
     if(this.data.playing===reading.id) { if(!this.data.audioLoading) this.stopAudio(); return; }
     this.stopAudio(); this.startAudio(reading.audio,reading.id);
   },
+  onShareAppMessage() {
+    return {title:'潮汕话词典，查字听乡音',path:'/pages/dictionary/dictionary'};
+  },
   showAbout() {
     const sources=[
       '字音资料：PUJDICT 项目贡献者 / pujbase。已转换五地读音并整理简繁字及词条索引。',
