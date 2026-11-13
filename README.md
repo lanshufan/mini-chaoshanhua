@@ -133,3 +133,29 @@ curl --fail --get --data-urlencode 'q=你好' --data-urlencode 'region=shantou' 
 上游“鞠躬尽瘁”的 MP3 存在拼接及声道切换。后端现在统一解码、重新编码后返回，音频链接添加版本参数避免沿用旧缓存。回归测试验证拼接音频的前后两段均保留；实际样本处理后可完整解码约3.79秒，微信真机仍需复测。
 
 已有部署执行 `git pull --ff-only` 和 `docker compose up -d --build`，必须重建镜像以安装 FFmpeg，不能仅重启旧容器。之后重新搜索词语再播放；本次修复无需修改小程序前端。
+
+
+## 澄海参考音频试用（2026-11-13）
+
+仅覆盖“心”字（chenghai），默认关闭。潮阳仍无已核实音源。证据、音源及核查限制见 AUDIO_SOURCES.md 的本次记录。
+
+在服务器项目根目录更新并试用：
+
+```sh
+git pull --ff-only
+CHENGHAI_AUDIO_TRIAL=true docker compose up -d --build
+curl --fail --get --data-urlencode 'q=心' --data-urlencode 'region=chenghai' http://127.0.0.1:6917/api/audio --output chenghai-xin.mp3
+```
+
+小程序重新搜索“心”，澄海喇叭会启用；其他未核实字词仍灰色。“心心”等整词不会拼接冒充整词录音。上面的临时环境变量仅用于这次创建容器；要持续启用，在项目 `.env` 中设 `CHENGHAI_AUDIO_TRIAL=true`。关闭时改为 false 并重新创建容器。
+
+### 后端怎样返回音频
+
+1. `server/dictionary.js` 查询字音，本地 `audio/manifest.json` 的真实录音优先。
+2. `server/remote-audio.js` 的 `decorate()` 为三地在线参考音及开启试用后的“chenghai:心”生成本项目 `/api/audio` 链接，不在查询时访问上游。
+3. 点击喇叭后前端播放该 HTTPS 链接。`server/app.js` 的 `/api/audio` 路由调用 `remoteAudio.get(q,region)`。
+4. 汕头、潮州、揭阳走现有 chaofayin 服务；澄海“心”走代码中固定且已核实的 HTTPS 文件地址。其他澄海、潮阳查询返回404，不回退到其他地区。
+5. 获取时限制超时、大小、并发并检查 MP3。`server/normalize-audio.js` 用 FFmpeg 统一音频格式，`sendOnlineAudio()` 返回音频字节，支持 Range / HEAD。
+6. 前端 `wx.createInnerAudioContext()` 直接播放自己的后端链接，不增加下载文件保存逻辑；只显示加载、播放状态，失败提示“播放失败”。
+
+这条链路不需要 AI 模型，也没有部署新的 TTS 服务。此次本地实测后端链路成功；用户服务器与微信真机需要更新后复测。

@@ -119,3 +119,27 @@ test('HTTP cooldown explains retry timing and does not block dictionary queries'
     assert.equal((await fetch(base+'/api/lookup?q='+encodeURIComponent('玩'))).status,200);
   });
 });
+
+
+test('Chenghai trial only enables explicitly verified 心 and never fabricates Chaoyang or phrases',async()=>{
+  const {service,calls}=fixture({chenghaiTrial:true,fetchImpl:async url=>{calls.push(String(url));return new Response(mp3,{headers:{'Content-Type':'audio/mpeg3'}});}});
+  const entry=service.decorate(lookup('心')).entry;
+  assert.ok(entry.readings.find(r=>r.id==='chenghai').audio.includes('region=chenghai'));
+  assert.ok(entry.readings.find(r=>r.id==='chenghai').audioSource.includes('czyzd.com'));
+  assert.equal(entry.readings.find(r=>r.id==='chaoyang').audio,'');
+  assert.equal(service.decorate(lookup('你好')).entry.readings.find(r=>r.id==='chenghai').audio,'');
+  assert.equal(service.decorate(lookup('心心')).entry.readings.find(r=>r.id==='chenghai').audio,'');
+  const local=service.decorate(lookup('心',{'chenghai:心':{file:'own.mp3',source:'own',license:'own'}}));
+  assert.equal(local.entry.readings.find(r=>r.id==='chenghai').audio,'/audio/own.mp3');
+  assert.equal(calls.length,0);
+  await assert.rejects(service.get('心','chaoyang'),{status:404});
+  await assert.rejects(service.get('心心','chenghai'),{status:404});
+  assert.deepEqual(await service.get('心','chenghai'),mp3);
+  assert.equal(calls.length,1);assert.equal(new URL(calls[0]).hostname,'api.czyzd.com');
+  await assert.rejects(fixture({chenghaiTrial:false}).service.get('心','chenghai'),{status:404});
+  await assert.rejects(fixture({provider:'none',chenghaiTrial:true}).service.get('心','chenghai'),{status:404});
+  await withServer(service,async base=>{
+    const response=await fetch(base+'/api/audio?q='+encodeURIComponent('心')+'&region=chenghai',{headers:{Range:'bytes=0-19'}});
+    assert.equal(response.status,206);assert.equal((await response.arrayBuffer()).byteLength,20);
+  });
+});

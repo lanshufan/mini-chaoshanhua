@@ -78,6 +78,7 @@ Page({
       '原始资料：https://github.com/pujdict/pujbase',
       '数据许可：CC BY-SA 4.0\nhttps://creativecommons.org/licenses/by-sa/4.0/',
       '在线参考发音：https://chaofayin.com/',
+      '澄海试用参考音频：潮州音字典（www.czyzd.com），仅限后端已核实样例。',
       '本项目源码（AGPL-3.0-or-later）：\nhttps://github.com/lanshufan/mini-chaoshanhua'
     ].join('\n\n');
     wx.showModal({title:'关于与资料来源',content:sources,confirmText:'复制来源',cancelText:'关闭',success(result) {

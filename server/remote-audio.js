@@ -4,6 +4,12 @@ import {normalizeMp3} from './normalize-audio.js';
 const QUERY_URL = 'https://v.laojuhui.com/FD/Chaofanyi.ashx';
 const PLAY_URL = 'https://v.laojuhui.com/FD/PlayChaoYinVoice.ashx';
 const REGIONS = {chaozhou:{field:'FaYinVoice1',code:'C'},shantou:{field:'FaYinVoice2',code:'D'},jieyang:{field:'FaYinVoice3',code:'E'}};
+// Manually checked regional row, not inferred from shared pronunciation or URL patterns.
+const CHENGHAI_SAMPLE = {
+  text:'心', region:'chenghai',
+  url:'https://api.czyzd.com/sound/czh/74971BE8-1C9F-4099-8755-E0816F6AC786.mp3',
+  source:'http://www.czyzd.com/search?keyword=%E5%BF%83'
+};
 const HEADERS = {Origin:'https://chaofayin.com',Referer:'https://chaofayin.com/'};
 const failure = (status,message) => Object.assign(new Error(message),{status});
 
@@ -23,11 +29,14 @@ async function readLimited(response,limit) {
   return Buffer.concat(chunks,size);
 }
 
-export function createRemoteAudio({provider=process.env.AUDIO_PROVIDER || 'chaofayin',fetchImpl=globalThis.fetch,timeoutMs=7000,cooldownMs=10000,now=Date.now,normalizeAudio=normalizeMp3}={}) {
+export function createRemoteAudio({provider=process.env.AUDIO_PROVIDER || 'chaofayin',fetchImpl=globalThis.fetch,timeoutMs=7000,cooldownMs=10000,now=Date.now,normalizeAudio=normalizeMp3,chenghaiTrial=process.env.CHENGHAI_AUDIO_TRIAL==='true'}={}) {
   if(!['none','chaofayin'].includes(provider)) throw new Error('AUDIO_PROVIDER must be chaofayin or none');
   const enabled=provider==='chaofayin',cache=new Map();
   let activeQueries=0,activeAudio=0,nextQueryAt=0;
   const info={provider,enabled,regions:enabled?Object.keys(REGIONS):[],source:enabled?'https://chaofayin.com/':'',cooldownSeconds:cooldownMs/1000};
+
+  const sampleFor=(text,region)=>enabled && chenghaiTrial && text===CHENGHAI_SAMPLE.text && region===CHENGHAI_SAMPLE.region ? CHENGHAI_SAMPLE : null;
+  info.chenghaiTrial={enabled:enabled && chenghaiTrial,words:enabled && chenghaiTrial ? ['心'] : []};
 
   async function queryIds(query) {
     const cached=cache.get(query);
@@ -63,9 +72,10 @@ export function createRemoteAudio({provider=process.env.AUDIO_PROVIDER || 'chaof
     for(const entry of [result.entry,...result.chars.map(item=>item.entry)]) {
       let online=false;
       for(const reading of entry.readings) {
-        if(reading.audio || !REGIONS[reading.id] || !reading.phonetic) continue;
+        const sample=sampleFor(entry.text,reading.id);
+        if(reading.audio || (!REGIONS[reading.id] && !sample) || !reading.phonetic) continue;
         reading.audio='/api/audio?region='+reading.id+'&q='+encodeURIComponent(entry.text)+'&v=2';
-        reading.audioMode='online';reading.audioSource=info.source;reading.audioLicense='';online=true;
+        reading.audioMode='online';reading.audioSource=sample ? sample.source : info.source;reading.audioLicense='';online=true;
       }
       if(online) {entry.note+=' 在线发音采用服务默认读法，需结合词义核对文白读。';entry.onlineAudioNotice='在线音源的地区标签尚未逐条核实，部分地区可能返回同一音频。不同文字的发音请求请间隔10秒。';}
     }
@@ -74,17 +84,23 @@ export function createRemoteAudio({provider=process.env.AUDIO_PROVIDER || 'chaof
 
   async function get(value,region) {
     const query=validate(value);
-    if(!enabled || !REGIONS[region]) throw failure(404,'该地区暂无在线音源');
+    const sample=sampleFor(query,region);
+    if(!enabled || (!REGIONS[region] && !sample)) throw failure(404,'该地区暂无在线音源');
     if(activeAudio>=4) throw failure(503,'在线发音繁忙，请稍后重试');
     activeAudio++;
     try {
-      const ids=await queryIds(query),id=ids[region];
-      if(!id) throw failure(404,'该地区暂未找到这段发音');
-      const url=new URL(PLAY_URL);url.searchParams.set('five',REGIONS[region].code);url.searchParams.set('ids',id);
-      const response=await fetchImpl(url,{headers:HEADERS,signal:AbortSignal.timeout(timeoutMs),redirect:'error'});
+      let url,headers;
+      if(sample) {url=new URL(sample.url);headers={};}
+      else {
+        const ids=await queryIds(query),id=ids[region];
+        if(!id) throw failure(404,'该地区暂未找到这段发音');
+        url=new URL(PLAY_URL);url.searchParams.set('five',REGIONS[region].code);url.searchParams.set('ids',id);
+        headers=HEADERS;
+      }
+      const response=await fetchImpl(url,{headers,signal:AbortSignal.timeout(timeoutMs),redirect:'error'});
       if(!response.ok) throw failure(502,'在线发音服务暂时不可用');
       const type=response.headers.get('content-type') || '';
-      if(!/^audio\/(mpeg|mp3)(?:;|$)/i.test(type)) {await response.body?.cancel();throw failure(502,'发音服务未返回有效音频');}
+      if(!/^audio\/(mpeg|mpeg3|mp3)(?:;|$)/i.test(type)) {await response.body?.cancel();throw failure(502,'发音服务未返回有效音频');}
       const bytes=await readLimited(response,4*1024*1024);
       if(bytes.length<4 || !(bytes.subarray(0,3).toString()==='ID3' || (bytes[0]===0xff && (bytes[1]&0xe0)===0xe0))) throw failure(502,'发音服务返回的音频无效');
       return await normalizeAudio(bytes);
