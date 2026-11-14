@@ -6,6 +6,14 @@ services:
     environment:
       AUDIO_PROVIDER: ${AUDIO_PROVIDER:-chaofayin}
       CHENGHAI_AUDIO_TRIAL: ${CHENGHAI_AUDIO_TRIAL:-false}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
+      LLM_MODEL: ${LLM_MODEL:-deepseek-flash}
+      LLM_MAX_CALLS_PER_DAY: ${LLM_MAX_CALLS_PER_DAY:-200}
+      REDIS_URL: ${REDIS_URL:-}
+      REDIS_PREFIX: ${REDIS_PREFIX:-chaoshan:}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:6917:6917"
     volumes:

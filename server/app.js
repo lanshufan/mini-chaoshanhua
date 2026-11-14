@@ -3,7 +3,7 @@ import {createRemoteAudio,sendOnlineAudio} from './remote-audio.js';
 import {createReadStream,statSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {database,lookup,loadAudio,audioDirectory} from './dictionary.js';
-export function createApp({directory=audioDirectory,manifest=loadAudio(directory),remoteAudio=createRemoteAudio()}={}) {
+export function createApp({directory=audioDirectory,manifest=loadAudio(directory),remoteAudio=createRemoteAudio(),suggest=async()=>null}={}) {
   const allowed=new Set(Object.values(manifest).map(x=>x.file));
   return http.createServer(async (req,res)=>{
     const send=(status,body)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
@@ -13,6 +13,7 @@ export function createApp({directory=audioDirectory,manifest=loadAudio(directory
       if(req.method!=='GET' && req.method!=='HEAD') {res.setHeader('Allow','GET, HEAD');return send(405,{error:'不支持此请求方式'});}
       if(url.pathname==='/health/ready') return send(200,{ok:true,characters:Object.keys(database.characters).length,phrases:Object.keys(database.phrases).length,audio:allowed.size,onlineAudio:remoteAudio.info});
       if(url.pathname==='/api/meta') return send(200,{regions:database.regions,source:database.source,characters:Object.keys(database.characters).length,phrases:Object.keys(database.phrases).length,audio:allowed.size,onlineAudio:remoteAudio.info,sourceCode:'https://github.com/lanshufan/mini-chaoshanhua'});
+      if(url.pathname==='/api/suggestion') return send(200,{suggestion: req.method==='HEAD'?null:await suggest(url.searchParams.get('q'))});
       if(url.pathname==='/api/lookup') return send(200,remoteAudio.decorate(lookup(url.searchParams.get('q'),manifest)));
       if(url.pathname==='/api/audio') {
         const bytes=await remoteAudio.get(url.searchParams.get('q'),url.searchParams.get('region'));

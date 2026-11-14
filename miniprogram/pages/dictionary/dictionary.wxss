@@ -31,3 +31,5 @@
 
 .reading .audio.audio-playing { width:auto; min-width:176rpx; padding:0 16rpx; border-radius:16rpx; }
 .audio-status { white-space:nowrap; font-size:24rpx; line-height:1.4; }
+
+.ai-suggestion{margin-top:24rpx;padding:24rpx;border-radius:20rpx;background:#edf6f2;color:#245747;font-size:28rpx;line-height:1.7}.ai-label{font-size:22rpx;margin-right:16rpx;color:#60766c}.ai-suggestion button{margin:16rpx 0 0;background:#245747;color:#fff;font-size:26rpx}.ai-note{font-size:22rpx;color:#73877c;margin-top:10rpx}

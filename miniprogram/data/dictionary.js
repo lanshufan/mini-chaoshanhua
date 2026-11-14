@@ -1,6 +1,6 @@
 const {apiBaseUrl}=require('../config');
 function validate(value) {
-  const query=String(value || '').trim();
+  const query=String(value || '').normalize('NFKC').replace(/[\s，。！？!?、：；‘’“”「」『』（）()《》〈〉【】…—,.\"':;\-]/g,'');
   if(!query || Array.from(query).length>10 || !/^[\u3400-\u9fff\uf900-\ufaff\u{20000}-\u{323af}]+$/u.test(query)) throw new Error('请输入 1–10 个汉字，不含空格、数字或标点');
   return query;
 }
@@ -19,4 +19,11 @@ function lookup(value) {
     });
   });
 }
-module.exports={lookup,validate};
+function suggest(value) {
+  return new Promise(resolve=>wx.request({
+    url:apiBaseUrl.replace(/\/$/,'')+'/api/suggestion?q='+encodeURIComponent(value),method:'GET',timeout:10000,
+    success(response) {const text=response.data && response.data.suggestion;resolve(response.statusCode===200 && typeof text==='string'?text:null);},
+    fail(){resolve(null);}
+  }));
+}
+module.exports={lookup,validate,suggest};

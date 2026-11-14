@@ -7,6 +7,11 @@
     <view wx:if="{{!result}}" class="counter">还可以输入 {{10 - count}} 个字</view>
   </view>
   <button class="search-button" bindtap="search" loading="{{loading}}" disabled="{{loading}}">搜索</button>
+  <view wx:if="{{suggestion}}" class="ai-suggestion">
+    <view><text class="ai-label">AI 提醒</text>潮汕话一般说「{{suggestion}}」</view>
+    <button size="mini" bindtap="useSuggestion">搜搜「{{suggestion}}」</button>
+    <view class="ai-note">AI 也可能会犯错，请核查重要信息。</view>
+  </view>
 </view>
 <view class="content"><view wx:if="{{error}}" class="error">{{error}}<button size="mini" bindtap="search" class="text-button">重试</button></view>
   <block wx:if="{{!result}}">

@@ -4,7 +4,8 @@ RUN set -eux; \
     cat /etc/apk/repositories; \
     apk -v --no-cache add ffmpeg
 WORKDIR /app
-COPY --chown=node:node package.json ./
+COPY --chown=node:node package.json package-lock.json ./
+RUN npm ci --omit=dev
 COPY --chown=node:node server ./server
 COPY --chown=node:node audio ./audio
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=6917 AUDIO_DIR=/app/audio

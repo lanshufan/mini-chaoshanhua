@@ -16,11 +16,12 @@ test('five real accents and regional distinctions',()=>{
 });
 test('multi-character, duplicate, phrase and unknown reference',()=>{
  for(const q of ['你好','谢谢','新年快乐','一二三四五六七八九十']) assert.equal(lookup(q).chars.map(x=>x.char).join(''),q);
+ assert.equal(lookup('你 吃了吗？').query,'你吃了吗');
  assert.equal(lookup('犀牛').entry.kind,'phrase');
  assert.ok(lookup('犀牛').entry.readings.every(x=>typeof x.phonetic==='string'&&!x.phonetic.includes('[object')));
  assert.equal(lookup('一二三四五六七八九十').entry.kind,'reference');
  assert.equal(lookup('𰻞').entry.kind,'missing');
- for(const q of ['',' ','hello','你好！','一二三四五六七八九十一','你 好']) assert.throws(()=>lookup(q));
+ for(const q of ['',' ','hello','一二三四五六七八九十一']) assert.throws(()=>lookup(q));
 });
 test('all generated readings are nonempty strings',()=>{
  for(const entry of Object.values(database.characters)) for(const options of Object.values(entry.readings)) for(const option of options) assert.equal(typeof option.phonetic,'string');

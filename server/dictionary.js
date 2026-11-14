@@ -18,7 +18,7 @@ export function validate(value) {
   return query;
 }
 export function lookup(value, audio={}) {
-  const query=validate(value);
+  const query=validate(String(value || '').normalize('NFKC').replace(/[\p{P}\s]/gu,''));
   function detail(text) {
     const single=Array.from(text).length===1;
     const character=database.characters[text];

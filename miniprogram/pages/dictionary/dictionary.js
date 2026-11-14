@@ -1,6 +1,6 @@
-const { lookup } = require('../../data/dictionary');
+const { lookup, suggest } = require('../../data/dictionary');
 Page({
-  data:{ input:'',count:0,result:null,active:null,selected:-1,playing:'',audioStatus:'',audioLoading:false,loading:false,error:'',history:[],suggestions:['你好','食','茶','谢谢','新年快乐'] },
+  data:{ suggestion:'',input:'',count:0,result:null,active:null,selected:-1,playing:'',audioStatus:'',audioLoading:false,loading:false,error:'',history:[],suggestions:['你好','食','茶','谢谢','新年快乐'] },
   onLoad() {
     try { const history=wx.getStorageSync('teochew-history'); if(Array.isArray(history)) this.setData({history:history.filter(x=>typeof x==='string').slice(0,8)}); } catch (_) {}
   },
@@ -41,11 +41,11 @@ Page({
       else begin();
     } catch(error) {begin();}
   },
-  onInput(e) { const input=Array.from(e.detail.value).slice(0,10).join(''); this.setData({input,count:Array.from(input).length}); },
-  clear() { this.requestVersion=(this.requestVersion || 0)+1; this.setData({loading:false,error:''}); this.stopAudio(); this.setData({input:'',count:0,result:null,active:null,selected:-1}); },
-  async search() {
+  onInput(e) { this.requestVersion=(this.requestVersion || 0)+1;this.setData({suggestion:'',loading:false}); const input=Array.from(e.detail.value).slice(0,10).join(''); this.setData({input,count:Array.from(input).length}); },
+  clear() { this.requestVersion=(this.requestVersion || 0)+1; this.setData({loading:false,error:'',suggestion:''}); this.stopAudio(); this.setData({input:'',count:0,result:null,active:null,selected:-1}); },
+  async search(options) {
     const version=this.requestVersion=(this.requestVersion || 0)+1;
-    this.stopAudio(); this.setData({loading:true,error:''});
+    this.stopAudio(); this.setData({loading:true,error:'',suggestion:''});
     try {
       const result=await lookup(this.data.input);
       if(version!==this.requestVersion) return;
@@ -53,7 +53,18 @@ Page({
       const history=[result.query,...this.data.history.filter(x=>x!==result.query)].slice(0,8);
       this.setData({input:result.query,count:result.chars.length,result,active:result.entry,selected:-1,history});
       try { wx.setStorageSync('teochew-history',history); } catch (_) {}
+      if(!(options && options.skipSuggestion===true) && Array.from(result.query).length>3) {
+        Promise.resolve().then(()=>suggest(result.query)).then(suggestion=>{
+          if(version===this.requestVersion && this.data.input===result.query && suggestion && suggestion!==result.query) this.setData({suggestion});
+        }).catch(()=>{});
+      }
     } catch(error) { if(version===this.requestVersion) this.setData({error:error.message}); } finally { if(version===this.requestVersion) this.setData({loading:false}); }
+  },
+  useSuggestion() {
+    const input=this.data.suggestion;
+    if(!input) return;
+    this.setData({input,count:Array.from(input).length,suggestion:''});
+    return this.search({skipSuggestion:true});
   },
   useWord(e) { const input=e.currentTarget.dataset.word; this.setData({input,count:Array.from(input).length}); this.search(); },
   selectChar(e) { const selected=Number(e.currentTarget.dataset.index); this.stopAudio(); this.setData({selected,active:this.data.result.chars[selected].entry}); },
