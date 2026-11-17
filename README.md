@@ -168,3 +168,7 @@ curl --fail --get --data-urlencode 'q=心' --data-urlencode 'region=chenghai' ht
 在部署目录 `.env` 填入与猜人物服务相同的 `LLM_API_KEY`、`LLM_BASE_URL`、`LLM_MODEL` 和已有 `REDIS_URL`，不要将密钥放入小程序。`REDIS_PREFIX` 默认 `chaoshan:`，与猜人物会话隔离。`LLM_MAX_CALLS_PER_DAY` 默认 200，为本功能独立每日 UTC 调用上限。未配置模型或 Redis 时不显示建议；Redis 不可用时停止新模型调用以避免无缓存收费。Redis 启动连接失败后需重启服务恢复。
 
 同一查询的标点、空格变体共用缓存：建议缓存 7 天，无建议缓存 1 天；模型故障不缓存。通过 Redis 锁合并并发请求，缓存键包含提示词版本。部署使用 `docker compose up -d --build`，小程序界面需重新预览或上传。查询文字会发送给所配置的 AI 服务，发布时同步更新小程序隐私说明。
+
+## 意见反馈模块
+
+新增独立反馈服务容器、管理后台和小程序「我的反馈」。部署及安全说明见 [feedback-service/README.md](feedback-service/README.md)。已有数据库无需重新初始化，启用服务前需配置数据库、微信 AppSecret 和隐私说明。

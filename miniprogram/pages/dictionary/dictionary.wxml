@@ -19,6 +19,7 @@
     <view class="chips"><button size="mini" wx:for="{{suggestions}}" wx:key="*this" class="chip" data-word="{{item}}" bindtap="useWord">{{item}}</button></view>
     <view wx:if="{{history.length}}" class="history"><view class="section-head">最近查询<button size="mini" class="text-button" bindtap="clearHistory">清空</button></view><view class="chips"><button size="mini" wx:for="{{history}}" wx:key="*this" class="chip muted" data-word="{{item}}" bindtap="useWord">{{item}}</button></view></view>
     <button size="mini" class="text-button about-button" bindtap="showAbout">关于</button>
+    <button size="mini" class="text-button about-button" bindtap="openFeedback">意见反馈</button>
   </block>
   <block wx:else>
     <view class="section-head">查询结果<text>共 {{result.chars.length}} 字</text></view>

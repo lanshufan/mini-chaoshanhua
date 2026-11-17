@@ -1,5 +1,6 @@
 const { lookup, suggest } = require('../../data/dictionary');
 Page({
+  openFeedback() { wx.navigateTo({url:'/pages/feedback/feedback'}); },
   data:{ suggestion:'',input:'',count:0,result:null,active:null,selected:-1,playing:'',audioStatus:'',audioLoading:false,loading:false,error:'',history:[],suggestions:['你好','食','茶','谢谢','新年快乐'] },
   onLoad() {
     try { const history=wx.getStorageSync('teochew-history'); if(Array.isArray(history)) this.setData({history:history.filter(x=>typeof x==='string').slice(0,8)}); } catch (_) {}

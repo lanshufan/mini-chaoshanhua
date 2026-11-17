@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import {once} from 'node:events';
+import {createApp} from '../app.js';
+import {createStore} from '../store.js';
+import {hashPassword,verifyPassword,Limiter,string} from '../security.js';
+function request(port,path,{method='GET',body,headers={}}={}){return new Promise((resolve,reject)=>{const req=http.request({port,host:'127.0.0.1',path,method,headers:{...(body?{'Content-Type':'application/json'}:{}),...headers}},res=>{let text='';res.on('data',c=>text+=c);res.on('end',()=>{let data;try{data=JSON.parse(text);}catch{data=text;}resolve({status:res.statusCode,headers:res.headers,data});});});req.on('error',reject);req.end(body?JSON.stringify(body):undefined);});}
+test('passwords, Unicode limit and rate limiter',async()=>{const hash=await hashPassword('long enough unique password');assert.equal(await verifyPassword('wrong',hash),false);assert.equal(await verifyPassword('long enough unique password',hash),true);assert.equal(string('😀'.repeat(500),1,500,'内容').length,1000);assert.throws(()=>string(' '.repeat(3),1,500,'内容'));assert.throws(()=>string('字'.repeat(501),1,500,'内容'));const limiter=new Limiter();limiter.take('x',1,60000);assert.throws(()=>limiter.take('x',1,60000),e=>e.status===429);});
+test('HTTP authorization, CSRF, validation and injection payload isolation',async t=>{
+ const calls=[],hash=await hashPassword('admin-password-long'),config={origin:'https://example.test',basePath:'/chaoshan/feedback',appId:'test',identityKey:'k'.repeat(32),privacyVersion:'v1',privacyText:'测试说明',trustProxy:false};
+ const store={ready:async()=>{},user:async()=> '10',admin:async n=>n==='admin'?{id:'1',password_hash:hash}:null,activeAdmin:async()=>({id:'1'}),list:async user=>{calls.push(['list',user]);return[];},create:async(user,data)=>{calls.push(['create',user,data]);return'1';},detail:async(key,user)=>{calls.push(['detail',key,user]);if(user&&key==='99')throw Object.assign(new Error('反馈不存在'),{status:404});return{replies:[]};},change:async(...args)=>calls.push(['change',...args]),remove:async(key,user)=>calls.push(['delete',key,user])};
+ const server=await createApp({store,config,exchange:async()=> 'verified-openid'});server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>new Promise(r=>server.close(r)));const port=server.address().port;
+ assert.equal((await request(port,'/api/feedback')).status,401);
+ let r=await request(port,'/api/session',{method:'POST',body:{code:'wx-code'}});assert.equal(r.status,200);const headers={Authorization:'Bearer '+r.data.token};
+ r=await request(port,'/api/feedback?user_id=999',{headers});assert.equal(r.status,200);assert.deepEqual(calls.at(-1),['list','10']);
+ assert.equal((await request(port,'/api/feedback/99',{headers})).status,404);
+ const payload={requestId:'11111111-1111-4111-8111-111111111111',category:'other',content:"'); DROP TABLE feedback_items; -- <script>alert(1)</script>",consent:true,privacyVersion:'v1',userId:'999'};
+ r=await request(port,'/api/feedback',{method:'POST',headers,body:payload});assert.equal(r.status,201);assert.equal(calls.at(-1)[1],'10');assert.equal(calls.at(-1)[2].content,payload.content);
+ assert.equal((await request(port,'/api/feedback',{method:'POST',headers,body:{...payload,content:'字'.repeat(501)}})).status,400);
+ assert.equal((await request(port,'/api/feedback',{method:'POST',headers,body:{...payload,consent:false}})).status,400);
+ assert.equal((await request(port,'/api/feedback',{method:'POST',headers,body:{...payload,content:'a'.repeat(13000)}})).status,413);
+ assert.equal((await request(port,'/api/admin/login',{method:'POST',body:{username:'admin',password:'admin-password-long'}})).status,403);
+ r=await request(port,'/api/admin/login',{method:'POST',headers:{Origin:config.origin},body:{username:'admin',password:'admin-password-long'}});assert.equal(r.status,200);const cookie=r.headers['set-cookie'][0];assert.match(cookie,/HttpOnly; Secure; SameSite=Strict/);const adminHeaders={Cookie:cookie.split(';')[0],Origin:config.origin,'X-CSRF-Token':r.data.csrf};
+ assert.equal((await request(port,'/api/admin/feedback/1',{method:'POST',headers:{...adminHeaders,'X-CSRF-Token':'bad'},body:{status:'resolved',version:0}})).status,403);
+ assert.equal((await request(port,'/api/admin/feedback/1',{method:'POST',headers:{...adminHeaders,Origin:'https://evil.test'},body:{status:'resolved',version:0}})).status,403);
+ assert.equal((await request(port,'/api/admin/feedback/1',{method:'POST',headers:adminHeaders,body:{status:'resolved',version:0}})).status,200);
+ assert.equal((await request(port,'/api/feedback',{headers:{Authorization:'Bearer '+cookie.split('=')[1].split(';')[0]}})).status,401);
+ assert.equal((await request(port,'/api/admin/logout',{method:'POST',headers:adminHeaders})).status,200);
+ assert.equal((await request(port,'/api/admin/session',{headers:adminHeaders})).status,401);
+ const page=await request(port,'/');assert.match(page.headers['content-security-policy'],/frame-ancestors 'none'/);const js=await request(port,'/admin.js');assert.doesNotMatch(js.data,/innerHTML|insertAdjacentHTML|document\.write/);
+});
+test('store binds SQL values and limits user reads to public replies',async()=>{const calls=[];const pool={execute:async(sql,args)=>{calls.push([sql,args]);if(sql.startsWith('SELECT id,content'))return[[{id:'1'}]];return[[]];}};const store=createStore(pool),attack="x' OR 1=1 --";await store.admin(attack);assert.equal(calls[0][1][0],attack);assert.ok(!calls[0][0].includes(attack));await store.detail('1','10');assert.match(calls[1][0],/id=\? AND user_id=\?/);assert.deepEqual(calls[1][1],['1','10']);assert.ok(calls.some(([sql])=>sql.includes("visibility='public'")));await store.remove('1','10').catch(()=>{});assert.match(calls.at(-1)[0],/DELETE.*id=\? AND user_id=\?/);});
+test('store rolls back stale admin changes and commits reply + status atomically',async()=>{const calls=[];let stale=false;const conn={beginTransaction:async()=>calls.push('begin'),commit:async()=>calls.push('commit'),rollback:async()=>calls.push('rollback'),release:()=>calls.push('release'),execute:async(sql,args)=>{calls.push([sql,args]);return sql.startsWith('SELECT')?[[{status:'pending',version:stale?1:0}]]:[[]];}};const store=createStore({getConnection:async()=>conn});await store.change('1','2',{version:0,status:'resolved',content:'已修正',visibility:'public'});assert.ok(calls.some(x=>Array.isArray(x)&&x[0].includes('feedback_status_history')));assert.ok(calls.some(x=>Array.isArray(x)&&x[0].includes('last_public_reply_at')));assert.deepEqual(calls.slice(-2),['commit','release']);calls.length=0;stale=true;await assert.rejects(store.change('1','2',{version:0,status:'resolved'}),e=>e.status===409);assert.deepEqual(calls.slice(-2),['rollback','release']);assert.ok(!calls.includes('commit'));});
