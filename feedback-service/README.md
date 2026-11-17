@@ -6,7 +6,7 @@
 
 1. 将根目录 .env.example 新增的 FEEDBACK_*、WX_APP_SECRET 配置填入服务器 .env。数据库使用反馈专用账号，只授予 mini_feedback 的 SELECT/INSERT/UPDATE/DELETE，不使用 root。MySQL 在可信内网；跨公网连接不属于本配置支持范围。
 2. FEEDBACK_IDENTITY_KEY 使用至少 32 字符的随机密钥（例如 `openssl rand -hex 32`），单独备份，不能随意更换；不上传代码仓库。WX_APP_SECRET 从微信公众平台获取，不填写到小程序代码。
-3. 填写 FEEDBACK_PRIVACY_TEXT 的实际运营主体、联系方式、保存期限、查询/删除/撤回途径，并在微信后台更新隐私保护指引。填写 FEEDBACK_PRIVACY_VERSION，变更说明时升级版本。小程序首次进入只加载说明，同意后才进行微信登录并创建身份标识。
+3. 反馈页面使用 privacy.js 中的内置基础说明，无需配置 FEEDBACK_PRIVACY_TEXT，旧 .env 中的该变量可以删除。填写 FEEDBACK_PRIVACY_VERSION（首版可用 v1），变更说明时升级版本。小程序首次进入只加载说明，同意后才进行微信登录并创建身份标识。基础说明不能替代完整的隐私保护指引；运营主体、联系方式、保存期限、查询/删除/撤回途径仍需在微信后台如实维护。
 4. `docker compose up -d --build feedback`。启动会检查必需配置和数据库连接；未配置时拒绝启动。修改 Nginx，加入 nginx.conf.example 的 feedback 专用 location，并确保它位于同一 HTTPS server；执行 `nginx -t` 后重载。
 5. 创建管理员：`docker compose exec -T feedback node create-admin.js`，通过标准输入传入一行 JSON：`{"username":"你的管理员名","password":"至少16位独立随机密码","displayName":"管理员"}`，然后结束输入。不要将实际密码写到命令参数、代码或共享终端记录中；也可从权限受限的临时文件通过 stdin 输入，完成后安全清理。
 6. 打开 `https://games.issuescook.cn/chaoshan/feedback/` 登录管理。只能用 HTTPS；安全 Cookie 不支持纯 HTTP 登录。服务重启会使会话失效，需重新登录。
