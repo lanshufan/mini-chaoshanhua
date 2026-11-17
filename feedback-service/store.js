@@ -13,8 +13,8 @@ export function createStore(pool){
       if(status){conditions.push('status=?');args.push(status);}
       return query(`SELECT id, content, category, related_word, status, created_at, updated_at, last_public_reply_at, user_read_at, version FROM feedback_items WHERE ${conditions.join(' AND ')} ORDER BY id DESC LIMIT 30`,args);
     },
-    create:async(user,data,privacy)=>{
-      try {const result=await query('INSERT INTO feedback_items (user_id,request_id,category,content,related_word,privacy_version,consented_at) VALUES (?,?,?,?,?,?,UTC_TIMESTAMP(3))',[user,data.requestId,data.category,data.content,data.relatedWord,privacy]);return String(result.insertId);}
+    create:async(user,data)=>{
+      try {const result=await query('INSERT INTO feedback_items (user_id,request_id,category,content,related_word) VALUES (?,?,?,?,?)',[user,data.requestId,data.category,data.content,data.relatedWord]);return String(result.insertId);}
       catch(error){if(error.code!=='ER_DUP_ENTRY')throw error;const [existing]=await query('SELECT id,content,category,related_word FROM feedback_items WHERE user_id=? AND request_id=?',[user,data.requestId]);if(!existing||existing.content!==data.content||existing.category!==data.category||existing.related_word!==data.relatedWord)fail(409,'重复提交编号与内容不一致');return String(existing.id);}
     },
     detail:async(key,user)=>{

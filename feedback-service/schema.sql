@@ -39,8 +39,6 @@ CREATE TABLE IF NOT EXISTS feedback_items (
   content VARCHAR(500) NOT NULL,
   related_word VARCHAR(64) DEFAULT NULL,
   status ENUM('pending','processing','resolved','closed') NOT NULL DEFAULT 'pending',
-  privacy_version VARCHAR(32) NOT NULL,
-  consented_at DATETIME(3) NOT NULL,
   user_read_at DATETIME(3) DEFAULT NULL,
   last_public_reply_at DATETIME(3) DEFAULT NULL,
   resolved_at DATETIME(3) DEFAULT NULL,

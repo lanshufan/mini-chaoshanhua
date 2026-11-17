@@ -20,7 +20,6 @@ export async function createApp({store,config,exchange}){
       limiter.take(`all:${ip}`,180,60000);
       if(req.method==='GET'&&assets.has(path)){const asset=assets.get(path);res.writeHead(200,{'Content-Type':asset.type+'; charset=utf-8'});return res.end(asset.body);}
       if(req.method==='GET'&&path==='/health/ready'){await store.ready();return send(200,{ok:true});}
-      if(req.method==='GET'&&path==='/api/privacy')return send(200,{version:config.privacyVersion,text:config.privacyText});
       if(req.method==='POST'&&path==='/api/session'){
         limiter.take(`wx:${ip}`,15,60000);const body=await json(req);const code=string(body.code,1,256,'登录凭据');
         const openid=await exchange(code);const hash=createHmac('sha256',config.identityKey).update(config.appId+'\0'+openid).digest();
@@ -52,7 +51,7 @@ export async function createApp({store,config,exchange}){
         const auth=/^Bearer ([a-f0-9]{64})$/.exec(req.headers.authorization||'');const user=sessions.get(auth?.[1],'user');
         if(path==='/api/feedback'){
           if(req.method==='GET')return send(200,{items:await store.list(user.id,null,id(url.searchParams.get('before')||'9223372036854775807'))});
-          if(req.method==='POST'){limiter.take(`submit:${user.id}`,5,3600000);const body=await json(req);if(body.consent!==true||body.privacyVersion!==config.privacyVersion)fail(400,'请阅读并同意最新隐私说明');if(!/^[a-f0-9-]{36}$/.test(body.requestId||''))fail(400,'提交编号不正确');if(!categories.includes(body.category))fail(400,'反馈类型不正确');const data={requestId:body.requestId,category:body.category,content:string(body.content,1,500,'反馈内容'),relatedWord:body.relatedWord?string(body.relatedWord,1,64,'词条'):null};return send(201,{id:await store.create(user.id,data,config.privacyVersion)});}
+          if(req.method==='POST'){limiter.take(`submit:${user.id}`,5,3600000);const body=await json(req);if(!/^[a-f0-9-]{36}$/.test(body.requestId||''))fail(400,'提交编号不正确');if(!categories.includes(body.category))fail(400,'反馈类型不正确');const data={requestId:body.requestId,category:body.category,content:string(body.content,1,500,'反馈内容'),relatedWord:body.relatedWord?string(body.relatedWord,1,64,'词条'):null};return send(201,{id:await store.create(user.id,data)});}
         }
         const match=/^\/api\/feedback\/([0-9]+)$/.exec(path);if(match){const key=id(match[1]);if(req.method==='GET')return send(200,await store.detail(key,user.id));if(req.method==='DELETE'){await store.remove(key,user.id);return send(200,{ok:true});}}
       }

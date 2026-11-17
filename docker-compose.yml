@@ -41,7 +41,6 @@ services:
       WX_APP_SECRET: ${WX_APP_SECRET:-}
       FEEDBACK_IDENTITY_KEY: ${FEEDBACK_IDENTITY_KEY:-}
       FEEDBACK_PUBLIC_URL: ${FEEDBACK_PUBLIC_URL:-https://games.issuescook.cn/chaoshan/feedback}
-      FEEDBACK_PRIVACY_VERSION: ${FEEDBACK_PRIVACY_VERSION:-}
       TRUST_PROXY: "true"
     extra_hosts:
       - "host.docker.internal:host-gateway"
