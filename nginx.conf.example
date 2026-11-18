@@ -1,7 +1,3 @@
-# 加入现有 HTTPS server 块，保留 /guess-who/ 等已有服务。
-# 这是 location 片段，不是整个 nginx.conf，不要覆盖证书或 server 配置。
-# 假定 Nginx 运行在宿主机；若 Nginx 也在容器内，须使用共同网络内的服务地址。
-
 location = /chaoshan {
     return 308 /chaoshan/$is_args$args;
 }
