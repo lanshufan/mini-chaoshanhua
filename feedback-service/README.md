@@ -1,16 +1,16 @@
 # 独立反馈服务
 
-沿用已创建的 mini_feedback 五张表，不需要再次建库。已部署旧版的用户须先执行 migrations/002-remove-consent-gate.sql，删除两个旧同意记录字段及其中的数据（不删除反馈正文、回复或状态）。先备份表，在维护窗口执行迁移并立即部署新版反馈后端，旧版后端仍引用这两个字段。目录中 schema.sql 是当前结构的参考副本。运行 Node 22，部署为独立容器，端口 6918，仅绑定宿主机回环地址；原词典服务继续使用 6917。
+首次部署请由数据库管理员执行 [schema.sql](schema.sql) 创建数据库和表。从仍含旧同意记录字段的版本升级时，须先执行 [迁移脚本](migrations/002-remove-consent-gate.sql)，删除两个旧同意记录字段及其中的数据（不删除反馈正文、回复或状态）。先备份表，在维护窗口执行迁移并立即部署新版反馈后端，旧版后端仍引用这两个字段。运行 Node 22，部署为独立容器，端口 6918，仅绑定宿主机回环地址；原词典服务继续使用 6917。
 
 ## 部署步骤
 
-1. 将根目录 .env.example 新增的 FEEDBACK_*、WX_APP_SECRET 配置填入服务器 .env。数据库使用反馈专用账号，只授予 mini_feedback 的 SELECT/INSERT/UPDATE/DELETE，不使用 root。MySQL 在可信内网；跨公网连接不属于本配置支持范围。
+1. 参照 [.env.example](../.env.example) 将反馈服务配置填入服务器的 `.env`，将 `FEEDBACK_PUBLIC_URL` 设为自己的 HTTPS 反馈服务地址。在 [docker-compose.yml](../docker-compose.yml) 中将反馈服务的 `WX_APP_ID` 改为与小程序及 AppSecret 对应的 AppID。数据库使用反馈专用账号，只授予 mini_feedback 的 SELECT/INSERT/UPDATE/DELETE，不使用 root。MySQL 在可信内网；跨公网连接不属于本配置支持范围。
 2. FEEDBACK_IDENTITY_KEY 使用至少 32 字符的随机密钥（例如 `openssl rand -hex 32`），单独备份，不能随意更换；不上传代码仓库。WX_APP_SECRET 从微信公众平台获取，不填写到小程序代码。
 3. 反馈页直接加载列表，无单独隐私卡片、同意按钮或同意前置校验。无需配置 FEEDBACK_PRIVACY_TEXT 或 FEEDBACK_PRIVACY_VERSION。privacy_version、consented_at 字段和 /api/privacy 接口均已删除。带有旧同意卡片的反馈客户端需要更新，原有查词客户端不受影响。微信后台完整隐私保护指引仍按实际处理行为维护。
 4. `docker compose up -d --build feedback`。启动会检查必需配置和数据库连接；未配置时拒绝启动。修改 Nginx，加入 nginx.conf.example 的 feedback 专用 location，并确保它位于同一 HTTPS server；执行 `nginx -t` 后重载。
 5. 创建管理员：`docker compose exec -T feedback node create-admin.js`，通过标准输入传入一行 JSON：`{"username":"你的管理员名","password":"至少16位独立随机密码","displayName":"管理员"}`，然后结束输入。不要将实际密码写到命令参数、代码或共享终端记录中；也可从权限受限的临时文件通过 stdin 输入，完成后安全清理。
-6. 打开 `https://games.issuescook.cn/chaoshan/feedback/` 登录管理。只能用 HTTPS；安全 Cookie 不支持纯 HTTP 登录。服务重启会使会话失效，需重新登录。
-7. 微信开发者工具导入词典项目，上传新版本；request 合法域名仍使用 https://games.issuescook.cn。若更换域名，同时更新 miniprogram/config.js 的 feedbackBaseUrl 和 FEEDBACK_PUBLIC_URL。
+6. 打开自己配置的 `FEEDBACK_PUBLIC_URL` 登录管理。只能用 HTTPS；安全 Cookie 不支持纯 HTTP 登录。服务重启会使会话失效，需重新登录。
+7. 微信开发者工具导入词典项目，上传新版本；将自己的服务域名加入 request 合法域名，并将 [miniprogram/config.js](../miniprogram/config.js) 的 `feedbackBaseUrl` 设为同一个反馈服务地址。
 
 ## 功能和安全措施
 
